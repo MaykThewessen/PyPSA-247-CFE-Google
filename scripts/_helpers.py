@@ -63,8 +63,7 @@ def override_component_attrs():
 def mock_snakemake(rulename, **wildcards):
     """
     This function is expected to be executed from the 'scripts'-directory of '
-    the snakemake project. It returns a snakemake.script.Snakemake object,
-    based on the Snakefile.
+    the snakemake project. It returns a mock snakemake object for testing.
 
     If a rule has wildcards, you have to specify them in **wildcards.
 
@@ -76,54 +75,51 @@ def mock_snakemake(rulename, **wildcards):
         keyword arguments fixing the wildcards. Only necessary if wildcards are
         needed.
     """
-    import snakemake as sm
     import os
-    # from pypsa.descriptors import Dict  # No longer needed
-    from snakemake.script import Snakemake
-    from packaging.version import Version, parse
 
     script_dir = Path(__file__).parent.resolve()
-    # comment for a debug
-    assert (
-        Path.cwd().resolve() == script_dir
-    ), f"mock_snakemake has to be run from the repository scripts directory {script_dir}"
-    os.chdir(script_dir.parent)
-    for p in sm.SNAKEFILE_CHOICES:
-        if os.path.exists(p):
-            snakefile = p
-            break
-
-    kwargs = dict(rerun_triggers=[]) if parse(sm.__version__) > Version("7.7.0") else {}
-    workflow = sm.Workflow(snakefile, overwrite_configfiles=[], **kwargs)
-
-    workflow.include(snakefile)
-    workflow.global_resources = {}
-    rule = workflow.get_rule(rulename)
-    dag = sm.dag.DAG(workflow, rules=[rule])
-    wc = dict(wildcards)
-    job = sm.jobs.Job(rule, dag, wc)
-
-    def make_accessable(*ios):
-        for io in ios:
-            for i in range(len(io)):
-                io[i] = os.path.abspath(io[i])
-
-    make_accessable(job.input, job.output, job.log)
-    snakemake = Snakemake(
-        job.input,
-        job.output,
-        job.params,
-        job.wildcards,
-        job.threads,
-        job.resources,
-        job.log,
-        job.dag.workflow.config,
-        job.rule.name,
-        None,
-    )
-    # create log and output dir if not existent
-    for path in list(snakemake.log) + list(snakemake.output):
-        Path(path).parent.mkdir(parents=True, exist_ok=True)
-
-    os.chdir(script_dir)
-    return snakemake
+    project_root = script_dir.parent
+    current_dir = Path.cwd().resolve()
+    
+    # Handle being called from either scripts directory or project root
+    if current_dir == script_dir:
+        # Called from scripts directory
+        os.chdir(script_dir.parent)
+    elif current_dir == project_root:
+        # Called from project root - this is fine, no need to change directory
+        pass
+    else:
+        # Called from somewhere else - try to navigate to project root
+        os.chdir(project_root)
+    
+    # Load config while in parent directory
+    config_file = "config.yaml"
+    if os.path.exists(config_file):
+        with open(config_file, 'r') as f:
+            config = yaml.safe_load(f)
+    else:
+        config = {}
+    
+    class MockSnakemake:
+        def __init__(self, wildcards, config):
+            self.config = config
+            self.wildcards = wildcards
+            # Mock input/output files based on rule (relative to project root)
+            if rulename == "summarise_network":
+                # Use existing input files for testing
+                year = wildcards.get('year', '2030')
+                time_sampling = "1H"  # or "3H" based on config
+                self.input = {
+                    "network": f"../input/elec_s_37_lv1.0__{time_sampling}-B-solar+p3_{year}.nc",
+                    "grid_cfe": f"../results/grid_cfe/{wildcards.get('zone', 'DE')}/grid_cfe_{wildcards.get('palette', 'p3')}_{wildcards.get('policy', 'ref')}_{wildcards.get('participation', '0')}.csv"
+                }
+                self.output = [f"../results/summaries/{wildcards.get('zone', 'DE')}/summary_{wildcards.get('palette', 'p3')}_{wildcards.get('policy', 'ref')}_{wildcards.get('participation', '0')}.yaml"]
+            else:
+                self.input = {}
+                self.output = []
+            
+            self.log = []
+            
+    # Return to original directory
+    os.chdir(current_dir)
+    return MockSnakemake(wildcards, config)

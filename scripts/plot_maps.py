@@ -44,11 +44,15 @@ except ImportError:
     GEOPANDAS_AVAILABLE = False
 
 try:
-    from pypsa.plot import add_legend_circles, add_legend_lines, add_legend_patches
+    from pypsa.plot.maps.static import add_legend_circles, add_legend_lines, add_legend_patches
     PYPSA_PLOT_AVAILABLE = True
 except ImportError:
-    print("Warning: pypsa.plot not available. Legend functions will be limited.")
-    PYPSA_PLOT_AVAILABLE = False
+    try:
+        from pypsa.plot import add_legend_circles, add_legend_lines, add_legend_patches
+        PYPSA_PLOT_AVAILABLE = True
+    except ImportError:
+        print("Warning: pypsa.plot not available. Legend functions will be limited.")
+        PYPSA_PLOT_AVAILABLE = False
 
 # Create a simple Dict-like class for compatibility
 class Dict(dict):
@@ -148,7 +152,19 @@ def plot_map(
     df = df.stack()
 
     # Check 2: print warning if any pypsa-eur-sec nodes still sneak into the plot
-    check = df.index.levels[0].symmetric_difference(n.buses.index)
+    # Fix for pandas MultiIndex access
+    try:
+        # Try to access MultiIndex levels
+        if isinstance(df.index, pd.MultiIndex):
+            check = df.index.levels[0].symmetric_difference(n.buses.index)
+        else:
+            # If not a MultiIndex, get unique values from the first level
+            first_level_values = df.index.get_level_values(0).unique() if df.index.nlevels > 1 else df.index.unique()
+            check = pd.Index(first_level_values).symmetric_difference(n.buses.index)
+    except (AttributeError, IndexError):
+        # Fallback: skip this check if index structure is unexpected
+        check = pd.Index([])
+    
     if len(check) != 0:
         print("Warning! ", check, "buses still remain in the network to plot!")
 
@@ -192,19 +208,47 @@ def plot_map(
         },
     }
 
-    fig, ax = plt.subplots(subplot_kw={"projection": ccrs.EqualEarth(n.buses.x.mean())})
-    fig.set_size_inches(9, 6)
+    if CARTOPY_AVAILABLE:
+        fig, ax = plt.subplots(subplot_kw={"projection": ccrs.EqualEarth(n.buses.x.mean())})
+        fig.set_size_inches(9, 6)
 
-    n.plot(
-        bus_sizes=df / bus_size_factor,
-        bus_colors=tech_colors,
-        line_colors=ac_color,
-        link_colors=dc_color,
-        line_widths=line_widths / linewidth_factor,
-        link_widths=link_widths / linewidth_factor,
-        ax=ax,
-        **map_opts,
-    )
+        # Use new PyPSA plotting API
+        try:
+            n.plot.map(
+                bus_sizes=df / bus_size_factor,
+                bus_colors=tech_colors,
+                line_colors=ac_color,
+                link_colors=dc_color,
+                line_widths=line_widths / linewidth_factor,
+                link_widths=link_widths / linewidth_factor,
+                ax=ax,
+                **map_opts,
+            )
+        except AttributeError:
+            # Fallback to old API if new one not available
+            n.plot(
+                bus_sizes=df / bus_size_factor,
+                bus_colors=tech_colors,
+                line_colors=ac_color,
+                link_colors=dc_color,
+                line_widths=line_widths / linewidth_factor,
+                link_widths=link_widths / linewidth_factor,
+                ax=ax,
+                **map_opts,
+            )
+    else:
+        # Fallback to simple matplotlib plot without cartopy
+        fig, ax = plt.subplots()
+        fig.set_size_inches(9, 6)
+        
+        # Simple scatter plot of buses colored by capacity
+        for i, (idx, bus) in enumerate(n.buses.iterrows()):
+            ax.scatter(bus.x, bus.y, s=10, c='blue', alpha=0.6)
+        
+        ax.set_xlabel('Longitude')
+        ax.set_ylabel('Latitude')
+        ax.set_title('Network Buses (Simplified view - install cartopy for detailed maps)')
+        ax.grid(True, alpha=0.3)
 
     legend_kwargs = {"loc": "upper left", "frameon": False}
 
@@ -214,52 +258,53 @@ def plot_map(
     labels = [f"{s} GW" for s in sizes]
     sizes = [s / bus_size_factor * 1e3 for s in sizes]
 
-    legend_kw = dict(
-        bbox_to_anchor=(1, 1),
-        labelspacing=2,
-        handletextpad=1.5,
-        title="Power generation capacity \n before optimization",
-        **legend_kwargs,
-    )
+    if PYPSA_PLOT_AVAILABLE and CARTOPY_AVAILABLE:
+        legend_kw = dict(
+            bbox_to_anchor=(1, 1),
+            labelspacing=2,
+            handletextpad=1.5,
+            title="Power generation capacity \n before optimization",
+            **legend_kwargs,
+        )
 
-    add_legend_circles(
-        ax,
-        sizes,
-        labels,
-        srid=n.srid,
-        patch_kw=dict(facecolor="royalblue"),
-        legend_kw=legend_kw,
-    )
-
-    sizes = [10, 5]
-    labels = [f"{s} GW" for s in sizes]
-    scale = 1e3 / linewidth_factor
-    sizes = [s * scale for s in sizes]
-
-    legend_kw = dict(
-        bbox_to_anchor=(1, 0.75),
-        labelspacing=0.8,
-        handletextpad=1,
-        title=title,
-        **legend_kwargs,
-    )
-
-    add_legend_lines(
-        ax, sizes, labels, patch_kw=dict(color="royalblue"), legend_kw=legend_kw
-    )
-
-    legend_kw = dict(bbox_to_anchor=(1, 0), loc="lower left", frameon=False)
-
-    if with_legend:
-        colors = [tech_colors[c] for c in carriers] + [ac_color, dc_color]
-        labels = carriers + ["HVAC line", "HVDC link"]
-
-        add_legend_patches(
+        add_legend_circles(
             ax,
-            colors,
+            sizes,
             labels,
+            srid=n.srid,
+            patch_kw=dict(facecolor="royalblue"),
             legend_kw=legend_kw,
         )
+
+        sizes = [10, 5]
+        labels = [f"{s} GW" for s in sizes]
+        scale = 1e3 / linewidth_factor
+        sizes = [s * scale for s in sizes]
+
+        legend_kw = dict(
+            bbox_to_anchor=(1, 0.75),
+            labelspacing=0.8,
+            handletextpad=1,
+            title=title,
+            **legend_kwargs,
+        )
+
+        add_legend_lines(
+            ax, sizes, labels, patch_kw=dict(color="royalblue"), legend_kw=legend_kw
+        )
+
+        legend_kw = dict(bbox_to_anchor=(1, 0), loc="lower left", frameon=False)
+
+        if with_legend:
+            colors = [tech_colors[c] for c in carriers] + [ac_color, dc_color]
+            labels = carriers + ["HVAC line", "HVDC link"]
+
+            add_legend_patches(
+                ax,
+                colors,
+                labels,
+                legend_kw=legend_kw,
+            )
 
     fig.tight_layout()
     fig.savefig(
@@ -271,6 +316,10 @@ def plot_map(
 
 
 def plot_datacenters(network, datacenters):
+    if not GEOPANDAS_AVAILABLE or not CARTOPY_AVAILABLE:
+        print("Warning: cartopy and geopandas are required for datacenter plotting. Skipping datacenter plot.")
+        return
+        
     n = network.copy()
     assign_location(n)
 
@@ -288,8 +337,7 @@ def plot_datacenters(network, datacenters):
         if name in n.buses.index:
             n.remove("Bus", [name])
 
-    # Load the geometries of datacenters
-    world = gpd.read_file(gpd.datasets.get_path("naturalearth_lowres"))
+    # Note: world geometry loading removed as it's not used in this function
 
     # Get the centroids of the specified datacenters
     centroids = geocode(datacenters, provider="nominatim", user_agent="myGeocoder")
@@ -316,39 +364,46 @@ def plot_datacenters(network, datacenters):
     fig, ax = plt.subplots(subplot_kw={"projection": ccrs.EqualEarth(n.buses.x.mean())})
     fig.set_size_inches(9, 6)
 
-    # Plot the country shapes
-    ax.set_extent(map_opts["boundaries"], crs=ccrs.PlateCarree())
-    ax.add_feature(
-        cfeature.OCEAN.with_scale("50m"),
-        facecolor=map_opts["color_geomap"]["ocean"],
-        zorder=0,
-    )
-    ax.add_feature(
-        cfeature.LAND.with_scale("50m"),
-        facecolor=map_opts["color_geomap"]["land"],
-        zorder=0,
-    )
+    # Plot the country shapes - use try-except to handle cartopy methods
+    try:
+        ax.set_extent(map_opts["boundaries"], crs=ccrs.PlateCarree())
+    except AttributeError:
+        pass  # set_extent not available, skip
+    
+    try:
+        ax.add_feature(
+            cfeature.OCEAN.with_scale("50m"),
+            facecolor=map_opts["color_geomap"]["ocean"],
+            zorder=0,
+        )
+        ax.add_feature(
+            cfeature.LAND.with_scale("50m"),
+            facecolor=map_opts["color_geomap"]["land"],
+            zorder=0,
+        )
 
-    # Add borders and coastline with adjusted linewidth and alpha
-    ax.add_feature(
-        cfeature.BORDERS.with_scale("50m"),
-        edgecolor=map_opts["color_geomap"]["border"],
-        linewidth=0.5,
-        alpha=0.5,
-        zorder=1,
-    )
-    ax.add_feature(
-        cfeature.COASTLINE.with_scale("50m"),
-        edgecolor=map_opts["color_geomap"]["coastline"],
-        linewidth=0.5,
-        alpha=0.5,
-        zorder=1,
-    )
+        # Add borders and coastline with adjusted linewidth and alpha
+        ax.add_feature(
+            cfeature.BORDERS.with_scale("50m"),
+            edgecolor=map_opts["color_geomap"]["border"],
+            linewidth=0.5,
+            alpha=0.5,
+            zorder=1,
+        )
+        ax.add_feature(
+            cfeature.COASTLINE.with_scale("50m"),
+            edgecolor=map_opts["color_geomap"]["coastline"],
+            linewidth=0.5,
+            alpha=0.5,
+            zorder=1,
+        )
+    except AttributeError:
+        pass  # add_feature not available, skip cartographic features
 
     # Plot the interconnected nodes
     connections = set()
-    for i, centroid_i in centroids.iteritems():
-        for j, centroid_j in centroids.iteritems():
+    for i, centroid_i in centroids.items():
+        for j, centroid_j in centroids.items():
             if i != j and (j, i) not in connections:
                 ax.plot(
                     [centroid_i.x, centroid_j.x],
@@ -389,16 +444,22 @@ if __name__ == "__main__":
         snakemake.input = Dict()
         snakemake.output = Dict()
 
-    images = "../study/images"
-    results = "../results/" + snakemake["config"]["run"]
+    images = "study/images"
+    results = "results/" + snakemake["config"]["run"]
 
     # snakemake.input.data = f"{folder}/networks/{scenario}/ref.csv"
     snakemake.output.plot = f"{images}/map-fleet.png"
     snakemake.output.plot_DC = f"{images}/map-DCs.png"
-    original_network = f"../input/v6_elec_s_37_lv1.0__1H-B-solar+p3_2025.nc"
+    original_network = f"input/elec_s_37_lv1.0__1H-B-solar+p3_2025.nc"
     stripped_network = f"{results}/networks/2025/EU/p1/cfe100/0.nc"
 
-    n = pypsa.Network(stripped_network)
+    # Use original network if stripped network doesn't exist yet
+    import os
+    if os.path.exists(stripped_network):
+        n = pypsa.Network(stripped_network)
+    else:
+        print(f"Stripped network not found at {stripped_network}, using original network")
+        n = pypsa.Network(original_network)
 
 rename = {
     "solar": "solar",

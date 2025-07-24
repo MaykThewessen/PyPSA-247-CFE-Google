@@ -52,10 +52,10 @@ if __name__ == "__main__":
         )
 
     # When running via snakemake
-    tech_palette = snakemake.wildcards.palette
-    zone = snakemake.wildcards.zone
-    year = snakemake.wildcards.year
-    policy = snakemake.wildcards.policy
+    tech_palette = snakemake.wildcards["palette"]
+    zone = snakemake.wildcards["zone"]
+    year = snakemake.wildcards["year"]
+    policy = snakemake.wildcards["policy"]
     datacenters = snakemake.config["ci"]["datacenters"]
 
     make_summary()

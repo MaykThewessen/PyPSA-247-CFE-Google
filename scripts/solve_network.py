@@ -419,7 +419,10 @@ def strip_network(n, config) -> None:
     nodes_to_keep.extend(new_nodes)
     nodes_to_keep.extend(config["additional_nodes"])
 
-    n.remove("Bus", n.buses.index.symmetric_difference(nodes_to_keep))
+    buses_to_remove = n.buses.index.symmetric_difference(nodes_to_keep)
+    if len(buses_to_remove) > 0:
+        for bus in buses_to_remove:
+            n.remove("Bus", bus)
 
     # make sure lines are kept
     n.lines.carrier = "AC"
@@ -437,7 +440,9 @@ def strip_network(n, config) -> None:
             location_boolean = c.df.bus.isin(nodes_to_keep)
         to_keep = c.df.index[location_boolean & c.df.carrier.isin(carrier_to_keep)]
         to_drop = c.df.index.symmetric_difference(to_keep)
-        n.remove(c.name, to_drop)
+        if len(to_drop) > 0:
+            for item in to_drop:
+                n.remove(c.name, item)
 
 
 def shutdown_lineexp(n: pypsa.Network) -> None:

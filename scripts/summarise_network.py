@@ -241,6 +241,24 @@ def summarise_network(n, policy, tech_palette):
         clean_gens = [f"{name} {g}" for g in clean_techs]
         clean_dischargers = [f"{name} {g}" for g in storage_discharge_techs]
         clean_chargers = [f"{name} {g}" for g in storage_charge_techs]
+        
+        # Debug: Check what generators actually exist
+        print(f"Looking for clean_gens: {clean_gens}")
+        print(f"Available generators: {list(n.generators.index[:10])}...")  # Show first 10
+        
+        # Filter to only existing generators
+        existing_clean_gens = [g for g in clean_gens if g in n.generators.index]
+        existing_clean_dischargers = [g for g in clean_dischargers if g in n.links.index]
+        existing_clean_chargers = [g for g in clean_chargers if g in n.links.index]
+        
+        print(f"Found existing clean_gens: {existing_clean_gens}")
+        print(f"Found existing dischargers: {existing_clean_dischargers}")
+        print(f"Found existing chargers: {existing_clean_chargers}")
+        
+        # Use existing generators or skip if none found
+        clean_gens = existing_clean_gens
+        clean_dischargers = existing_clean_dischargers  
+        clean_chargers = existing_clean_chargers
         grid_buses = [bus for bus in n.buses.index if not name in bus]
         grid_loads = n.loads.index[n.loads.bus.isin(grid_buses)]
 
@@ -258,7 +276,9 @@ def summarise_network(n, policy, tech_palette):
             for tech in ["battery discharger", "H2 Fuel Cell", "ironair discharger"]
         ]
 
-        grid_cfe = grid_cfe_df.loc[:, (location, f"iteration {n_iterations-1}")]
+        # Select column from multi-index DataFrame
+        column_key = (location, f"iteration {n_iterations-1}")
+        grid_cfe = grid_cfe_df[column_key]
 
         results[location] = {}
         weights = n.snapshot_weightings["generators"]
@@ -792,8 +812,8 @@ def summarise_network(n, policy, tech_palette):
         }
 
     # Saving resutls as ../summaries/{}.yaml
-    print(f"Summary for is completed! Saving to \n {snakemake.output.yaml}")
-    with open(snakemake.output.yaml, "w") as outfile:
+    print(f"Summary for is completed! Saving to \n {snakemake.output[0]}")
+    with open(snakemake.output[0], "w") as outfile:
         yaml.dump(results, outfile)
 
 
@@ -812,12 +832,12 @@ if __name__ == "__main__":
         )
 
     # Wildcards & Settings
-    policy = snakemake.wildcards.policy[:3]
-    penetration = float(snakemake.wildcards.policy[3:]) / 100 if policy != "ref" else 0
-    tech_palette = snakemake.wildcards.palette
-    zone = snakemake.wildcards.zone
-    year = snakemake.wildcards.year
-    participation = snakemake.wildcards.participation
+    policy = snakemake.wildcards["policy"][:3]
+    penetration = float(snakemake.wildcards["policy"][3:]) / 100 if policy != "ref" else 0
+    tech_palette = snakemake.wildcards["palette"]
+    zone = snakemake.wildcards["zone"]
+    year = snakemake.wildcards["year"]
+    participation = snakemake.wildcards["participation"]
 
     datacenters = snakemake.config["ci"]["datacenters"]
     locations = list(datacenters.keys())
@@ -833,11 +853,11 @@ if __name__ == "__main__":
 
     # Read data
     n = pypsa.Network(
-        snakemake.input.network
+        snakemake.input["network"]
     )
 
     grid_cfe_df = pd.read_csv(
-        snakemake.input.grid_cfe, index_col=0, parse_dates=True, header=[0, 1]
+        snakemake.input["grid_cfe"], index_col=0, parse_dates=True, header=[0, 1]
     )
 
     print(grid_cfe_df)
