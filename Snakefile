@@ -1,14 +1,13 @@
 from shutil import copyfile, move
-from snakemake.remote.HTTP import RemoteProvider as HTTPRemoteProvider
-
-HTTP = HTTPRemoteProvider()
+import os
+# Remote provider removed - deprecated in Snakemake 9.x
 
 
 configfile: "config.yaml"
 
 
 wildcard_constraints:
-    policy="[\-a-zA-Z0-9\.]+",
+    policy=r"[\-a-zA-Z0-9\.]+",
 
 
 RDIR = os.path.join(config["results_dir"], config["run"])
@@ -154,15 +153,13 @@ rule copy_config:
 if config.get("retrieve_cost_data", True):
 
     rule retrieve_cost_data:
-        input:
-            HTTP.remote(url, keep_local=True),
         output:
             f"input/costs_{year}.csv",
         # log: f"logs/{RDIR}retrieve_cost_data_{year}.log"
         resources:
             mem_mb=1000,
-        run:
-            move(input[0], output[0])
+        shell:
+            f"curl -L -o {{output}} {url}"
 
 
 # additional rules for cluster communication -> not included into a workflow

@@ -419,7 +419,7 @@ def strip_network(n, config) -> None:
     nodes_to_keep.extend(new_nodes)
     nodes_to_keep.extend(config["additional_nodes"])
 
-    n.mremove("Bus", n.buses.index.symmetric_difference(nodes_to_keep))
+    n.remove("Bus", n.buses.index.symmetric_difference(nodes_to_keep))
 
     # make sure lines are kept
     n.lines.carrier = "AC"
@@ -437,7 +437,7 @@ def strip_network(n, config) -> None:
             location_boolean = c.df.bus.isin(nodes_to_keep)
         to_keep = c.df.index[location_boolean & c.df.carrier.isin(carrier_to_keep)]
         to_drop = c.df.index.symmetric_difference(to_keep)
-        n.mremove(c.name, to_drop)
+        n.remove(c.name, to_drop)
 
 
 def shutdown_lineexp(n: pypsa.Network) -> None:
@@ -1594,7 +1594,7 @@ def solve_network(
             grid_supply_cfe = grid_cfe_df.loc[:, (location, f"iteration {i}")]
             print(grid_supply_cfe.describe())
 
-        n.optimize.create_model()
+        n.optimize.create_model(force_dim_names=False)
 
         extra_functionality(n, n.snapshots)
 
@@ -1660,7 +1660,6 @@ if __name__ == "__main__":
     # When running via snakemake
     n = pypsa.Network(
         timescope(year)["network_file"],
-        override_component_attrs=override_component_attrs(),
     )
 
     Nyears = 1  # years in simulation

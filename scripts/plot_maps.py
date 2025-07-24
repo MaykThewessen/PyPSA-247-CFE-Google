@@ -26,13 +26,40 @@ from matplotlib.transforms import Bbox
 import yaml
 import pypsa
 
-from pypsa.descriptors import Dict
-from pypsa.plot import add_legend_circles, add_legend_lines, add_legend_patches
+# Try to import cartopy and geopandas, but provide fallbacks if not available
+try:
+    from cartopy import crs as ccrs
+    import cartopy.feature as cfeature
+    CARTOPY_AVAILABLE = True
+except ImportError:
+    print("Warning: cartopy not available. Map plotting will be limited.")
+    CARTOPY_AVAILABLE = False
 
-from cartopy import crs as ccrs
-import cartopy.feature as cfeature
-import geopandas as gpd
-from geopandas.tools import geocode
+try:
+    import geopandas as gpd
+    from geopandas.tools import geocode
+    GEOPANDAS_AVAILABLE = True
+except ImportError:
+    print("Warning: geopandas not available. Data center plotting will be limited.")
+    GEOPANDAS_AVAILABLE = False
+
+try:
+    from pypsa.plot import add_legend_circles, add_legend_lines, add_legend_patches
+    PYPSA_PLOT_AVAILABLE = True
+except ImportError:
+    print("Warning: pypsa.plot not available. Legend functions will be limited.")
+    PYPSA_PLOT_AVAILABLE = False
+
+# Create a simple Dict-like class for compatibility
+class Dict(dict):
+    def __getattr__(self, key):
+        try:
+            return self[key]
+        except KeyError:
+            raise AttributeError(key)
+    
+    def __setattr__(self, key, value):
+        self[key] = value
 
 
 def assign_location(n):
@@ -76,7 +103,7 @@ def plot_map(
     # Drop data center nodes
     for name in datacenters:
         if name in n.buses.index:
-            n.mremove("Bus", [name])
+            n.remove("Bus", [name])
 
     # Empty dataframe indexed with electrical buses
     index = pd.DataFrame(index=n.buses.index)
@@ -259,7 +286,7 @@ def plot_datacenters(network, datacenters):
     # Drop data center nodes
     for name in datacenters:
         if name in n.buses.index:
-            n.mremove("Bus", [name])
+            n.remove("Bus", [name])
 
     # Load the geometries of datacenters
     world = gpd.read_file(gpd.datasets.get_path("naturalearth_lowres"))

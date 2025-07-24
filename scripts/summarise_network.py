@@ -833,7 +833,7 @@ if __name__ == "__main__":
 
     # Read data
     n = pypsa.Network(
-        snakemake.input.network, override_component_attrs=override_component_attrs()
+        snakemake.input.network
     )
 
     grid_cfe_df = pd.read_csv(

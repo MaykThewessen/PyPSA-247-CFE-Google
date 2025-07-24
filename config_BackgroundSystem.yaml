@@ -63,7 +63,7 @@ costs:
   USD2021_to_EUR2021: 0.8460 # [EUR/USD] ECB
   USD2023_to_EUR2023: 0.9248 # [EUR/USD] ECB
   adv_nuclear_overnight: 7138 # 2021$/kW CAPEX https://www.eia.gov/outlooks/aeo/ 2022
-  price_green_hydrogen: 3 #EUR/kg
+  price_green_hydrogen: 6.0 #EUR/kg -> default is 3.0€/kg
   price_lignite: 6.5 # EUR/MWhth from TYNDP2020 -> default is 2.9
   price_coal: 8.9 # EUR/MWhth from TYNDP2020 -> default is 8.15
   price_gas: 35 # EUR/MWhth -> https://energy.ec.europa.eu/system/files/2022-05/SWD_2022_230_1_EN_autre_document_travail_service_part1_v3.pdf
