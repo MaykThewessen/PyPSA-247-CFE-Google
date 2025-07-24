@@ -383,7 +383,7 @@ if __name__ == "__main__":
 
         # Emulate snakemake object with dictionary
         snakemake = Dict()
-        with open(f"../config.yaml", "r") as f:
+        with open(f"config.yaml", "r") as f:
             snakemake.config = yaml.safe_load(f)
 
         snakemake.input = Dict()
