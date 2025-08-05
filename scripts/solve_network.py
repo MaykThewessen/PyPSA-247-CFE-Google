@@ -1303,14 +1303,24 @@ def solve_network(
 
             ci_export = n.model["Link-p"].loc[:, [name + " export"]]
             ci_import = n.model["Link-p"].loc[:, [name + " import"]]
+            
+            # Handle grid_supply_cfe - create coefficient to match ci_import dimensions
+            if hasattr(grid_supply_cfe, '__len__') and len(grid_supply_cfe) > 1:
+                # grid_supply_cfe is a time series 
+                cfe_coefficient = grid_supply_cfe
+            else:
+                # grid_supply_cfe is scalar - use as is
+                cfe_coefficient = float(grid_supply_cfe)
+            
+            import_cfe_term = (
+                ci_import 
+                * n.links.at[name + " import", "efficiency"] 
+                * cfe_coefficient
+            )
+            
             grid_sum = (
                 (-1 * ci_export * weights)
-                + (
-                    ci_import
-                    * n.links.at[name + " import", "efficiency"]
-                    * grid_supply_cfe
-                    * weights
-                )
+                + (import_cfe_term * weights)
             ).sum()  # linear expr
 
             lhs = gen_sum + discharge_sum + charge_sum + grid_sum
@@ -1599,8 +1609,8 @@ def solve_network(
             grid_supply_cfe = grid_cfe_df.loc[:, (location, f"iteration {i}")]
             print(grid_supply_cfe.describe())
 
+        # Use newer PyPSA API for compatibility with newer xarray versions
         n.optimize.create_model(force_dim_names=False)
-
         extra_functionality(n, n.snapshots)
 
         # if policy == "ref" and i > 0:
