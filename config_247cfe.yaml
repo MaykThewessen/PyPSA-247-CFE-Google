@@ -162,8 +162,8 @@ solving:
     n_iterations: 2  #iterations with CFE factor
 
   solver:
-    name: gurobi
-    options: gurobi-default
+    name: highs
+    options: highs-default
 
   solver_options:
     gurobi-default:
@@ -175,6 +175,14 @@ solving:
       AggFill: 0
       PreDual: 0
       GURO_PAR_BARDENSETHRESH: 200
+    highs-default:
+      threads: 4
+      solver: ipm        # interior point method
+      run_crossover: off
+      primal_feasibility_tolerance: 1.e-7
+      dual_feasibility_tolerance: 1.e-7
+      ipm_optimality_tolerance: 1.e-8
+      random_seed: 123
 
 
 tech_colors:

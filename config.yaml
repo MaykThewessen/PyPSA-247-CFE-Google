@@ -202,20 +202,14 @@ solving:
 
   solver_options:
     highs-default:
-      threads: 16
-      presolve: choose
-      solver: ipm  # interior point method
-      run_crossover: off
-      time_limit: 7200  # 2 hours
-    gurobi-default:
       threads: 4
-      method: 2         # barrier
-      crossover: 0
-      BarConvTol: 1.e-7
-      Seed: 123         # Consistent seed for all plattforms
-      AggFill: 0
-      PreDual: 0
-      GURO_PAR_BARDENSETHRESH: 200
+      solver: ipm        # interior point method
+      run_crossover: off
+      primal_feasibility_tolerance: 1.e-7
+      dual_feasibility_tolerance: 1.e-7
+      ipm_optimality_tolerance: 1.e-8
+      random_seed: 123
+      time_limit: 7200   # 2 hours
 
 
 tech_colors:

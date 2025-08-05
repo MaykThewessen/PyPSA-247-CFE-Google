@@ -1,32 +1,28 @@
-# SPDX-FileCopyrightText: 2023 Iegor Riepin, Tom Brown
-#
-# SPDX-License-Identifier: MIT
-
-name: '247-env'
+name: '247-cfe-compatible'
 channels:
   - bioconda
   - conda-forge
   - defaults
 dependencies:
-  - python
+  - python=3.11
   - matplotlib
   - numpy
-  - pandas
-  - pypsa
+  - pandas<2.0
+  - pypsa=0.26.*
   - yaml
   - ca-certificates
   - certifi
   - openssl
   - pypdf2=1.28.4
   - pip
-  - linopy
+  - linopy=0.3.*
   - geopandas
   - seaborn
   - oyaml
   - snakemake
   - ipykernel
   - highs
+  - xarray<2024.12
   - pip:
     - vresutils
     - highspy
-
