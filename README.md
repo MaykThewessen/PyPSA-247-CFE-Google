@@ -27,8 +27,8 @@ The project comprises five distinct studies, each examining unique aspects of 24
 *A study published on Zenodo, October 2022*
 
 - [Study](https://zenodo.org/record/7180097)
-- [Code (GitHub release)](https://github.com/PyPSA/247-cfe/tree/v0.1)
-- [Code (Github release, math module written in Linopy)](https://github.com/PyPSA/247-cfe/releases/tag/v0.2)
+- [Code (GitHub release)](https://github.com/MaykThewessen/PyPSA-247-CFE-Google/tree/v0.1)
+- [Code (Github release, math module written in Linopy)](https://github.com/MaykThewessen/PyPSA-247-CFE-Google/releases/tag/v0.2)
 
 ### 2. On the means, costs, and system-level impacts of 24/7 carbon-free energy procurement
 *A research paper published in Energy Strategy Reviews, 2024*
@@ -41,7 +41,7 @@ The project comprises five distinct studies, each examining unique aspects of 24
 *Published on Zenodo, July 2023*
 
 - [Complete study](https://zenodo.org/record/8185850)
-- [Code (GitHub release)](https://github.com/PyPSA/247-cfe/tree/v0.3)
+- [Code (GitHub release)](https://github.com/MaykThewessen/PyPSA-247-CFE-Google/tree/v0.3)
 
 
 ### 4. Spatio-temporal load shifting for truly clean computing
@@ -55,7 +55,7 @@ The project comprises five distinct studies, each examining unique aspects of 24
 *A commentary paper published in Joule, 2025*
 
 - [DOI](https://doi.org/10.1016/j.joule.2024.101808)
-- [Code (GitHub release)](https://github.com/PyPSA/247-cfe/tree/v0.4)
+- [Code (GitHub release)](https://github.com/MaykThewessen/PyPSA-247-CFE-Google/tree/v0.4)
 
 ## How to reproduce results of a specific study?
 
@@ -64,7 +64,7 @@ The project comprises five distinct studies, each examining unique aspects of 24
 First, clone this repository:
 
 ```
-git clone https://github.com/PyPSA/247-cfe --branch <tag_name> --single-branch
+git clone https://github.com/MaykThewessen/PyPSA-247-CFE-Google --branch <tag_name> --single-branch
 ```
 - `--single-branch` option allows for cloning only git history leading to tip of the tag. This saves a lot of unnecessary code from being cloned.
 
@@ -101,7 +101,7 @@ These research works are maintained in dedicated repositories, each containing a
 1. Clone the repository (the latest release):
 
 ```
-git clone git@github.com:PyPSA/247-cfe.git
+git clone git@github.com:MaykThewessen/PyPSA-247-CFE-Google.git
 ```
 
 2. Install the necessary dependencies using `environment.yaml` file. The following commands will do the job:

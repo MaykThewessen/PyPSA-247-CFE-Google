@@ -1,7 +1,7 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: 247-cfe
 Upstream-Contact: Iegor Riepin <iegor.riepin@tu-berlin.de>
-Source: https://github.com/PyPSA/247-cfe
+Source: https://github.com/MaykThewessen/PyPSA-247-CFE-Google
 
 Files: study/*
 Copyright: : 2022-2023 Iegor Riepin, Tom Brown
