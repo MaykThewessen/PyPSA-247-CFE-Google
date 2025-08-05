@@ -26,6 +26,9 @@ gurobi.log
 *.csv
 *.pyc
 
+# macOS system files
+.DS_Store
+
 
 ## Core latex/pdflatex auxiliary files:
 *.aux
